@@ -709,8 +709,8 @@ def interaction_analysis(train_df, feature_cols, df_univariate, verbose=True):
     for i, feat1 in enumerate(top_features):
         for j, feat2 in enumerate(top_features):
             if i < j:
-                feat1_bins = pd.qcut(train_df[feat1], q=3, duplicates='drop', labels=['Low', 'Mid', 'High'])
-                feat2_bins = pd.qcut(train_df[feat2], q=3, duplicates='drop', labels=['Low', 'Mid', 'High'])
+                feat1_bins = pd.qcut(train_df[feat1], q=3, duplicates='drop')
+                feat2_bins = pd.qcut(train_df[feat2], q=3, duplicates='drop')
 
                 crosstab = pd.crosstab([feat1_bins, feat2_bins], train_df['Y'])
 
@@ -748,8 +748,8 @@ def interaction_analysis(train_df, feature_cols, df_univariate, verbose=True):
     for feat_pair in df_interactions.head(20)['Feature_Pair']:
         feat1, feat2 = feat_pair.split(' × ')
 
-        feat1_bins = pd.qcut(train_df[feat1], q=3, duplicates='drop', labels=['Low', 'Mid', 'High'])
-        feat2_bins = pd.qcut(train_df[feat2], q=3, duplicates='drop', labels=['Low', 'Mid', 'High'])
+        feat1_bins = pd.qcut(train_df[feat1], q=3, duplicates='drop')
+        feat2_bins = pd.qcut(train_df[feat2], q=3, duplicates='drop')
 
         crosstab = pd.crosstab([feat1_bins, feat2_bins], train_df['Y'])
         if 1 in crosstab.columns and 0 in crosstab.columns:
@@ -784,16 +784,16 @@ def interaction_analysis(train_df, feature_cols, df_univariate, verbose=True):
     for feat_pair in df_interactions.head(10)['Feature_Pair']:
         feat1, feat2 = feat_pair.split(' × ')
 
-        feat1_bins = pd.qcut(train_df[feat1], q=3, duplicates='drop', labels=['Low', 'Mid', 'High'])
-        feat2_bins = pd.qcut(train_df[feat2], q=3, duplicates='drop', labels=['Low', 'Mid', 'High'])
+        feat1_bins = pd.qcut(train_df[feat1], q=3, duplicates='drop')
+        feat2_bins = pd.qcut(train_df[feat2], q=3, duplicates='drop')
 
         normal_samples = train_df[train_df['Y'] == 0]
         defect_samples = train_df[train_df['Y'] == 1]
 
-        normal_bins_1 = pd.qcut(normal_samples[feat1], q=3, duplicates='drop', labels=['Low', 'Mid', 'High'])
-        normal_bins_2 = pd.qcut(normal_samples[feat2], q=3, duplicates='drop', labels=['Low', 'Mid', 'High'])
-        defect_bins_1 = pd.qcut(defect_samples[feat1], q=3, duplicates='drop', labels=['Low', 'Mid', 'High'])
-        defect_bins_2 = pd.qcut(defect_samples[feat2], q=3, duplicates='drop', labels=['Low', 'Mid', 'High'])
+        normal_bins_1 = pd.qcut(normal_samples[feat1], q=3, duplicates='drop')
+        normal_bins_2 = pd.qcut(normal_samples[feat2], q=3, duplicates='drop')
+        defect_bins_1 = pd.qcut(defect_samples[feat1], q=3, duplicates='drop')
+        defect_bins_2 = pd.qcut(defect_samples[feat2], q=3, duplicates='drop')
 
         normal_region = set(zip(normal_bins_1, normal_bins_2))
         defect_region = set(zip(defect_bins_1, defect_bins_2))
