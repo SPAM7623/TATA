@@ -1,0 +1,166 @@
+# Alpha Defect Detection - Configuration File
+# Adjust these parameters for different runs
+
+# ============================================================================
+# DATA CONFIGURATION
+# ============================================================================
+data:
+  train_file: "data/train.csv"
+  test_file: "data/test.csv"
+  output_dir: "outputs"
+
+  # Feature configuration
+  feature_prefix: "X"
+  target_column: "Y"
+  coil_id_column: "CoilID"
+
+  # Missing value handling
+  missing_value_strategy: "median"  # Options: median, mean, drop
+  missing_threshold: 0.5  # Drop features with >50% missing
+
+
+# ============================================================================
+# EDA CONFIGURATION
+# ============================================================================
+eda:
+  # Statistical significance
+  significance_level: 0.05
+
+  # Correlation thresholds
+  high_correlation_threshold: 0.8
+  moderate_correlation_threshold: 0.5
+
+  # Variance analysis
+  cv_outlier_threshold: 2.0
+
+  # PCA configuration
+  variance_explained_80: 0.80
+  variance_explained_95: 0.95
+
+  # Interaction analysis
+  interaction_bins: 3
+  interaction_strength_threshold: 0.05
+
+
+# ============================================================================
+# FEATURE ENGINEERING
+# ============================================================================
+feature_engineering:
+  # Interaction terms
+  create_interactions: true
+  interaction_combinations: ["multiply", "divide", "subtract"]
+
+  # Instability measures
+  create_instability: true
+  rolling_window: 5
+
+  # PCA components
+  use_pca_components: true
+  n_pca_components: 18
+
+  # Scaling
+  scaling_method: "robust"  # Options: standard, robust, minmax
+
+
+# ============================================================================
+# MODEL CONFIGURATION
+# ============================================================================
+model:
+  # Cross-validation
+  cv_strategy: "stratified"
+  n_splits: 5
+  random_state: 42
+
+  # XGBoost parameters
+  xgboost:
+    max_depth: 6
+    learning_rate: 0.05
+    n_estimators: 500
+    scale_pos_weight: 22.7  # Class imbalance ratio
+    subsample: 0.8
+    colsample_bytree: 0.8
+    random_state: 42
+
+  # LightGBM parameters
+  lightgbm:
+    max_depth: 6
+    learning_rate: 0.05
+    n_estimators: 500
+    scale_pos_weight: 22.7
+    subsample: 0.8
+    colsample_bytree: 0.8
+    random_state: 42
+
+  # Class imbalance handling
+  use_class_weights: true
+  use_smote: false
+  smote_ratio: 0.3
+
+
+# ============================================================================
+# THRESHOLD TUNING
+# ============================================================================
+threshold_tuning:
+  # Threshold search range
+  threshold_min: 0.1
+  threshold_max: 0.9
+  threshold_step: 0.05
+
+  # Optimization metric
+  metric: "f1"  # Options: f1, recall, precision, auc_roc
+
+  # Production thresholds
+  production_threshold: 0.5
+
+
+# ============================================================================
+# EVALUATION METRICS
+# ============================================================================
+evaluation:
+  # Primary metrics
+  primary_metric: "f1"
+
+  # Secondary metrics
+  secondary_metrics:
+    - "precision"
+    - "recall"
+    - "roc_auc"
+    - "pr_auc"
+
+  # Reporting
+  report_decimals: 4
+
+
+# ============================================================================
+# INTERPRETATION
+# ============================================================================
+interpretation:
+  # SHAP analysis
+  shap_sample_size: 200
+  shap_force_plot: true
+  shap_dependence_plot: true
+
+  # Feature importance
+  calculate_permutation_importance: true
+  n_repeats: 10
+
+
+# ============================================================================
+# OUTPUT CONFIGURATION
+# ============================================================================
+output:
+  # Logging
+  log_level: "INFO"
+  log_file: "logs/alpha_defect.log"
+
+  # Verbosity
+  verbose: true
+
+  # Save options
+  save_models: true
+  save_predictions: true
+  save_plots: true
+
+  # Plot settings
+  dpi: 150
+  figure_format: "png"
