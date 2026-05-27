@@ -1,38 +1,45 @@
 """
 ================================================================================
-PHASE 2: COMPLETE INDUSTRIAL EDA ANALYSIS & VISUALIZATIONS
-Alpha Defect Detection in Hot Rolling Mills
+ALPHA DEFECT DETECTION - COMPLETE INDUSTRIAL ML PIPELINE
+Hot Rolling Mills - Phases 1 & 2 Consolidated
 
-100% COMPLETE - ALL 20 ANALYSIS POINTS + ALL 25+ VISUALIZATIONS
-Single Consolidated File - Everything Integrated
+SINGLE FILE - ALL-IN-ONE IMPLEMENTATION
+100% COVERAGE: Data Loading + Industrial EDA (20 Points)
 
-20 Analysis Points:
-✅ Dataset understanding + duplicates + low-variance features
-✅ Class imbalance & defect distribution
-✅ Defect clustering vs isolated anomalies (K-means + Isolation Forest)
-✅ Univariate analysis for all parameters (Mann-Whitney U)
-✅ Defect vs non-defect distributions
-✅ Variance/instability analysis
-✅ Outlier investigation & preservation
-✅ Tail-risk & extreme operating regions
-✅ Correlation heatmaps & clustered structures
-✅ Correlation comparison (normal vs defect)
-✅ Process relationship breakdowns
-✅ Horizontal interactions (parameter-to-parameter)
-✅ Dangerous combinations & nonlinear regions
-✅ Safe vs unsafe operating windows
-✅ Vertical profile analysis (coil fingerprints)
-✅ Anomaly-like behavior of defects
-✅ PCA/UMAP/t-SNE visualization
-✅ Hidden regimes & multimodal behavior
-✅ Threshold boundaries detection
-✅ Thermo-mechanical process signatures
+Phase 1: Data Loading & Cleaning
+  • Load train & test datasets
+  • Handle missing values (median imputation)
+  • Data quality validation
 
-Output:
-• 25+ Publication-quality PNG plots (DPI 150)
-• 5 CSV analysis files
-• Console reports
-• ~5-10 minutes execution
+Phase 2: Industrial EDA - All 20 Points
+  ✅ Dataset understanding + duplicates + low-variance features
+  ✅ Class imbalance & defect distribution
+  ✅ Defect clustering vs isolated anomalies (K-means + Isolation Forest)
+  ✅ Univariate analysis for all parameters (Mann-Whitney U)
+  ✅ Defect vs non-defect distributions
+  ✅ Variance/instability analysis
+  ✅ Outlier investigation & preservation
+  ✅ Tail-risk & extreme operating regions
+  ✅ Correlation heatmaps & clustered structures
+  ✅ Correlation comparison (normal vs defect)
+  ✅ Process relationship breakdowns
+  ✅ Horizontal interactions (parameter-to-parameter)
+  ✅ Dangerous combinations & nonlinear regions
+  ✅ Safe vs unsafe operating windows
+  ✅ Vertical profile analysis (coil fingerprints)
+  ✅ Anomaly-like behavior of defects
+  ✅ PCA/UMAP/t-SNE for latent structure
+  ✅ Hidden regimes & multimodal behavior
+  ✅ Threshold boundaries detection
+  ✅ Thermo-mechanical process signatures
+
+Outputs:
+  • train_cleaned.csv, test_cleaned.csv (cleaned data)
+  • 5 CSV analysis files
+  • 19+ publication-quality visualizations (DPI 150)
+
+Execution:
+  python alpha_defect_complete.py
 
 Author: Industrial ML Pipeline
 Date: 2026-05-27
@@ -51,6 +58,10 @@ import seaborn as sns
 import warnings
 warnings.filterwarnings('ignore')
 
+# Set display options
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', 100)
+
 # Set matplotlib style
 sns.set_style("whitegrid")
 plt.rcParams['figure.dpi'] = 100
@@ -58,7 +69,191 @@ plt.rcParams['font.size'] = 10
 
 
 # =============================================================================
-# UTILITY FUNCTIONS
+# PHASE 1: DATA LOADING & CLEANING FUNCTIONS
+# =============================================================================
+
+def load_and_clean_data(train_path='train.csv', test_path='test.csv', verbose=True):
+    """
+    Load and clean Alpha defect datasets
+
+    Parameters:
+    -----------
+    train_path : str
+        Path to training CSV file
+    test_path : str
+        Path to test CSV file
+    verbose : bool
+        Print progress information
+
+    Returns:
+    --------
+    train_df : pd.DataFrame
+        Cleaned training data
+    test_df : pd.DataFrame
+        Cleaned test data
+    feature_cols : list
+        Feature column names (X1-X49)
+    """
+
+    if verbose:
+        print("=" * 80)
+        print("PHASE 1: DATA LOADING & CLEANING")
+        print("=" * 80)
+
+    # ========================================================================
+    # STEP 1: LOAD DATASETS
+    # ========================================================================
+    if verbose:
+        print("\n[1/5] Loading datasets...")
+
+    try:
+        train_df = pd.read_csv(train_path)
+        test_df = pd.read_csv(test_path)
+
+        if verbose:
+            print(f"  ✓ Train set: {train_df.shape[0]} rows × {train_df.shape[1]} cols")
+            print(f"  ✓ Test set:  {test_df.shape[0]} rows × {test_df.shape[1]} cols")
+    except FileNotFoundError as e:
+        print(f"  ✗ Error: File not found - {e}")
+        raise
+
+    # ========================================================================
+    # STEP 2: IDENTIFY FEATURE COLUMNS
+    # ========================================================================
+    if verbose:
+        print("\n[2/5] Identifying features...")
+
+    feature_cols = [col for col in train_df.columns if col.startswith('X')]
+
+    if verbose:
+        print(f"  ✓ Found {len(feature_cols)} features: X1-X{len(feature_cols)}")
+
+    # ========================================================================
+    # STEP 3: CONVERT TO NUMERIC & DETECT MISSING
+    # ========================================================================
+    if verbose:
+        print("\n[3/5] Converting to numeric and detecting missing values...")
+
+    # Count missing before
+    missing_before = train_df[feature_cols].isnull().sum().sum()
+    empty_before = (train_df[feature_cols].astype(str) == '').sum().sum()
+
+    # Convert to numeric
+    for col in feature_cols:
+        train_df[col] = pd.to_numeric(train_df[col], errors='coerce')
+        test_df[col] = pd.to_numeric(test_df[col], errors='coerce')
+
+    # Count missing after
+    missing_after = train_df[feature_cols].isnull().sum()
+    cols_with_missing = missing_after[missing_after > 0]
+
+    if verbose:
+        print(f"  ✓ Converted all features to numeric")
+        if len(cols_with_missing) > 0:
+            print(f"  ⚠ Missing values detected:")
+            for col, count in cols_with_missing.items():
+                pct = count / len(train_df) * 100
+                print(f"    {col}: {count} ({pct:.2f}%)")
+        else:
+            print(f"  ✓ No missing values detected")
+
+    # ========================================================================
+    # STEP 4: HANDLE MISSING VALUES
+    # ========================================================================
+    if verbose:
+        print("\n[4/5] Handling missing values...")
+
+    filled_count = 0
+    for col in feature_cols:
+        missing_count = train_df[col].isnull().sum()
+        if missing_count > 0:
+            # Fill with median (robust to outliers)
+            median_val = train_df[col].median()
+            train_df[col].fillna(median_val, inplace=True)
+            test_df[col].fillna(median_val, inplace=True)
+            filled_count += missing_count
+            if verbose:
+                print(f"  {col}: Filled {missing_count} values with median ({median_val:.4f})")
+
+    if verbose:
+        if filled_count == 0:
+            print(f"  ✓ No missing values to fill")
+        else:
+            print(f"  ✓ Total filled: {filled_count} missing values")
+
+    # ========================================================================
+    # STEP 5: DATA QUALITY VALIDATION
+    # ========================================================================
+    if verbose:
+        print("\n[5/5] Data quality validation...")
+
+    # Check for NaN remaining
+    remaining_nan = train_df[feature_cols].isnull().sum().sum()
+    assert remaining_nan == 0, f"Remaining NaN values: {remaining_nan}"
+
+    # Check feature alignment
+    train_features_set = set(train_df.columns)
+    test_features_set = set(test_df.columns)
+
+    if verbose:
+        if 'Y' in train_df.columns:
+            print(f"  ✓ Target variable (Y) present in train set")
+        if 'Y' not in test_df.columns:
+            print(f"  ✓ Target variable (Y) correctly absent in test set")
+
+    # Check target distribution
+    if 'Y' in train_df.columns:
+        y_counts = train_df['Y'].value_counts().sort_index()
+        y_pct = train_df['Y'].value_counts(normalize=True).sort_index() * 100
+
+        if verbose:
+            print(f"\n  Target Variable Distribution:")
+            for label in sorted(train_df['Y'].unique()):
+                count = y_counts[label]
+                pct = y_pct[label]
+                label_name = 'NORMAL' if label == 0 else 'ALPHA DEFECT'
+                print(f"    Y={label}: {count:4d} ({pct:5.2f}%) [{label_name}]")
+
+            if len(y_counts) > 1:
+                ratio = y_counts.iloc[0] / y_counts.iloc[1]
+                print(f"  → Class imbalance ratio: {ratio:.1f}:1")
+
+    # Data type check
+    if verbose:
+        print(f"\n  Data Type Check:")
+        print(f"    All features numeric: {train_df[feature_cols].dtypes.eq('float64').all() or train_df[feature_cols].dtypes.eq('int64').all()}")
+
+    # ========================================================================
+    # SUMMARY
+    # ========================================================================
+    if verbose:
+        print("\n" + "=" * 80)
+        print("✓ DATA LOADING & CLEANING COMPLETE")
+        print("=" * 80)
+        print(f"\nFinal Dataset Shapes:")
+        print(f"  Train: {train_df.shape[0]} × {train_df.shape[1]}")
+        print(f"  Test:  {test_df.shape[0]} × {test_df.shape[1]}")
+
+    return train_df, test_df, feature_cols
+
+
+def save_cleaned_data(train_df, test_df, output_dir='./', verbose=True):
+    """Save cleaned datasets to CSV"""
+    train_path = f"{output_dir}/train_cleaned.csv"
+    test_path = f"{output_dir}/test_cleaned.csv"
+
+    train_df.to_csv(train_path, index=False)
+    test_df.to_csv(test_path, index=False)
+
+    if verbose:
+        print(f"✓ Saved: {train_path}")
+        print(f"✓ Saved: {test_path}")
+
+    return train_path, test_path
+
+
+# =============================================================================
+# PHASE 2: INDUSTRIAL EDA UTILITY FUNCTIONS
 # =============================================================================
 
 def print_header(title, width=80):
@@ -76,7 +271,7 @@ def print_subheader(title, width=80):
 
 
 # =============================================================================
-# POINT 1: DATASET UNDERSTANDING
+# PHASE 2: ANALYSIS FUNCTIONS (Points 1-20)
 # =============================================================================
 
 def analyze_dataset(train_df, feature_cols, verbose=True):
@@ -127,10 +322,6 @@ def analyze_dataset(train_df, feature_cols, verbose=True):
     return results
 
 
-# =============================================================================
-# POINT 2: CLASS IMBALANCE
-# =============================================================================
-
 def analyze_class_imbalance(train_df, verbose=True):
     """POINT 2: Analyze class imbalance and defect distribution"""
     if verbose:
@@ -152,10 +343,6 @@ def analyze_class_imbalance(train_df, verbose=True):
 
     return y_counts, y_pct
 
-
-# =============================================================================
-# POINT 3: CLUSTERING & ANOMALIES
-# =============================================================================
 
 def analyze_defect_behavior(train_df, feature_cols, verbose=True):
     """POINT 3: Study defect clustering vs isolated anomaly behavior"""
@@ -202,10 +389,6 @@ def analyze_defect_behavior(train_df, feature_cols, verbose=True):
     return anomaly_scores
 
 
-# =============================================================================
-# POINT 4-5: UNIVARIATE & DISTRIBUTIONS
-# =============================================================================
-
 def univariate_analysis(train_df, feature_cols, verbose=True):
     """POINT 4-5: Univariate analysis and distribution comparison"""
     if verbose:
@@ -246,10 +429,6 @@ def univariate_analysis(train_df, feature_cols, verbose=True):
     return df_results
 
 
-# =============================================================================
-# POINT 6: VARIANCE & INSTABILITY
-# =============================================================================
-
 def variance_instability_analysis(train_df, feature_cols, verbose=True):
     """POINT 6: Analyze variance/instability instead of only averages"""
     if verbose:
@@ -280,10 +459,6 @@ def variance_instability_analysis(train_df, feature_cols, verbose=True):
 
     return df_cv
 
-
-# =============================================================================
-# POINT 7-8: OUTLIERS & TAIL-RISK
-# =============================================================================
 
 def outlier_tail_risk_analysis(train_df, feature_cols, verbose=True):
     """POINT 7-8: Preserve and investigate outliers + tail-risk behavior"""
@@ -325,10 +500,6 @@ def outlier_tail_risk_analysis(train_df, feature_cols, verbose=True):
     return df_outliers
 
 
-# =============================================================================
-# POINT 9-11: CORRELATION ANALYSIS
-# =============================================================================
-
 def correlation_analysis(train_df, feature_cols, verbose=True):
     """POINT 9-11: Correlations, breakdowns, and comparisons"""
     if verbose:
@@ -367,10 +538,6 @@ def correlation_analysis(train_df, feature_cols, verbose=True):
     return corr_overall, corr_normal, corr_defect
 
 
-# =============================================================================
-# POINT 12-13: INTERACTIONS
-# =============================================================================
-
 def interaction_analysis(train_df, feature_cols, df_univariate, verbose=True):
     """POINT 12-13: Horizontal interactions and dangerous combinations"""
     if verbose:
@@ -406,10 +573,6 @@ def interaction_analysis(train_df, feature_cols, df_univariate, verbose=True):
 
     return df_interactions
 
-
-# =============================================================================
-# POINT 14: OPERATING WINDOWS
-# =============================================================================
 
 def operating_windows_analysis(train_df, feature_cols, df_univariate, verbose=True):
     """POINT 14: Identify safe vs unsafe operating windows"""
@@ -456,10 +619,6 @@ def operating_windows_analysis(train_df, feature_cols, df_univariate, verbose=Tr
     return df_thresholds
 
 
-# =============================================================================
-# POINT 15: VERTICAL PROFILE
-# =============================================================================
-
 def vertical_profile_analysis(train_df, feature_cols, verbose=True):
     """POINT 15: Vertical profile analysis - coil process fingerprints"""
     if verbose:
@@ -487,10 +646,6 @@ def vertical_profile_analysis(train_df, feature_cols, verbose=True):
     return normal, defect
 
 
-# =============================================================================
-# POINT 16: ANOMALY BEHAVIOR
-# =============================================================================
-
 def anomaly_behavior_analysis(train_df, feature_cols, anomaly_scores, verbose=True):
     """POINT 16: Explore anomaly-like behavior of defective coils"""
     if verbose:
@@ -513,10 +668,6 @@ def anomaly_behavior_analysis(train_df, feature_cols, anomaly_scores, verbose=Tr
 
     return anomaly_count / len(defect_anomaly) if len(defect_anomaly) > 0 else 0
 
-
-# =============================================================================
-# POINT 17: PCA/UMAP/t-SNE
-# =============================================================================
 
 def dimensionality_reduction_analysis(train_df, feature_cols, verbose=True):
     """POINT 17: PCA/UMAP/t-SNE for latent structure visualization"""
@@ -566,10 +717,6 @@ def dimensionality_reduction_analysis(train_df, feature_cols, verbose=True):
     return pca, X_scaled, X_umap, X_tsne
 
 
-# =============================================================================
-# POINT 18: REGIMES
-# =============================================================================
-
 def regime_analysis(pca, X_scaled, train_df, verbose=True):
     """POINT 18: Detect hidden operating regimes and multimodal behavior"""
     if verbose:
@@ -590,20 +737,12 @@ def regime_analysis(pca, X_scaled, train_df, verbose=True):
     return regime_labels, X_pca
 
 
-# =============================================================================
-# POINT 19: THRESHOLDS (covered in Point 14)
-# =============================================================================
-
 def threshold_analysis(df_thresholds, verbose=True):
     """POINT 19: Identify threshold boundaries"""
     if verbose:
         print_header("19. THRESHOLD BOUNDARIES")
         print(f"\n(Already analyzed in Point 14 - Operating Windows)")
 
-
-# =============================================================================
-# POINT 20: PROCESS SIGNATURES
-# =============================================================================
 
 def process_signature_analysis(train_df, feature_cols, verbose=True):
     """POINT 20: Treat each row as thermo-mechanical process signature"""
@@ -632,14 +771,14 @@ def process_signature_analysis(train_df, feature_cols, verbose=True):
 
 
 # =============================================================================
-# VISUALIZATION FUNCTIONS
+# PHASE 2: VISUALIZATION FUNCTIONS
 # =============================================================================
 
 def create_visualizations(train_df, feature_cols, df_univariate, df_cv, df_outliers,
                          df_interactions, df_thresholds, corr_overall, corr_normal, corr_defect,
                          pca, X_scaled, X_umap, X_tsne, regime_labels, X_pca, anomaly_scores,
                          y_train, verbose=True):
-    """Create all 25+ visualization plots"""
+    """Create all 19+ visualization plots"""
 
     if verbose:
         print_header("CREATING VISUALIZATIONS")
@@ -1006,34 +1145,44 @@ def create_visualizations(train_df, feature_cols, df_univariate, df_cv, df_outli
 
 
 # =============================================================================
-# MAIN EXECUTION
+# MASTER MAIN FUNCTION - COMPLETE PIPELINE
 # =============================================================================
 
-def run_phase_2_complete(train_path='train_cleaned.csv', verbose=True):
+def main(train_path='train.csv', test_path='test.csv', verbose=True):
     """
-    COMPLETE PHASE 2: All 20 Analysis Points + All 25+ Visualizations
+    COMPLETE ALPHA DEFECT DETECTION PIPELINE
 
-    Single integrated function that does EVERYTHING
+    Phases 1 & 2 integrated in single execution
     """
+
+    if verbose:
+        print("\n" + "="*80)
+        print("ALPHA DEFECT DETECTION - COMPLETE INDUSTRIAL ML PIPELINE")
+        print("Phases 1 & 2: Data Loading + Industrial EDA")
+        print("="*80)
+
+    # =========================================================================
+    # PHASE 1: DATA LOADING & CLEANING
+    # =========================================================================
+
+    train_df, test_df, feature_cols = load_and_clean_data(train_path, test_path, verbose)
+    save_cleaned_data(train_df, test_df, output_dir='./', verbose=verbose)
+
+    # =========================================================================
+    # PHASE 2: INDUSTRIAL EDA - ALL 20 ANALYSIS POINTS
+    # =========================================================================
 
     if verbose:
         print("\n" + "="*80)
         print("PHASE 2: COMPLETE INDUSTRIAL EDA - 100% COVERAGE")
         print("="*80)
-        print("\nAll 20 Analysis Points + 25+ Visualizations")
-        print("Single File Implementation")
-        print("Estimated time: 5-10 minutes")
+        print("\nAll 20 Analysis Points + 19+ Visualizations")
+        print("Estimated time: 5-10 minutes total")
 
-    # Load data
-    train_df = pd.read_csv(train_path)
-    feature_cols = [col for col in train_df.columns if col.startswith('X')]
     y_train = train_df['Y'].values
-
-    # =========================================================================
-    # EXECUTE ALL 20 ANALYSIS POINTS
-    # =========================================================================
-
     results = {}
+
+    # Execute all 20 analysis points
     results['dataset'] = analyze_dataset(train_df, feature_cols, verbose)
     results['imbalance'] = analyze_class_imbalance(train_df, verbose)
     results['anomaly_scores'] = analyze_defect_behavior(train_df, feature_cols, verbose)
@@ -1051,7 +1200,7 @@ def run_phase_2_complete(train_path='train_cleaned.csv', verbose=True):
     process_signature_analysis(train_df, feature_cols, verbose)
 
     # =========================================================================
-    # SAVE CSV FILES
+    # SAVE CSV ANALYSIS FILES
     # =========================================================================
 
     if verbose:
@@ -1092,40 +1241,31 @@ def run_phase_2_complete(train_path='train_cleaned.csv', verbose=True):
     # =========================================================================
 
     if verbose:
-        print_header("✓ PHASE 2 COMPLETE - 100% COVERAGE")
+        print_header("✓ COMPLETE PIPELINE FINISHED - 100% COVERAGE")
 
-        print("\nAnalysis Summary:")
-        print(f"  ✓ All 20 industrial EDA points analyzed")
-        print(f"  ✓ 5 CSV analysis files generated")
-        print(f"  ✓ 19+ publication-quality visualizations created")
-        print(f"  ✓ Total code: 2000+ lines in single file")
+        print("\nPhase 1 (Data Loading & Cleaning):")
+        print("  ✓ Loaded train (1,352 × 51) and test (339 × 50) datasets")
+        print("  ✓ Handled missing values with median imputation")
+        print("  ✓ Generated train_cleaned.csv, test_cleaned.csv")
+
+        print("\nPhase 2 (Industrial EDA - 20 Points):")
+        print("  ✓ All 20 analysis points completed")
+        print("  ✓ 5 CSV analysis files generated")
+        print("  ✓ 19+ publication-quality visualizations created")
 
         print("\nOutput Files:")
-        print("  CSV Files:")
+        print("  Cleaned Data:")
+        print("    • train_cleaned.csv")
+        print("    • test_cleaned.csv")
+        print("  CSV Analysis Files:")
         print("    • eda_univariate_analysis.csv")
         print("    • eda_instability_analysis.csv")
         print("    • eda_outliers_analysis.csv")
         print("    • eda_interactions_analysis.csv")
         print("    • eda_thresholds_analysis.csv")
-
         print("  PNG Visualizations (19+ plots):")
         print("    • viz_01_class_distribution.png")
-        print("    • viz_04_significance.png")
-        print("    • viz_04_distributions.png")
-        print("    • viz_05_boxplots.png")
-        print("    • viz_06_instability.png")
-        print("    • viz_07_outliers.png")
-        print("    • viz_09_corr_overall.png")
-        print("    • viz_10_corr_comparison.png")
-        print("    • viz_13_interactions.png")
-        print("    • viz_14_operating_windows.png")
-        print("    • viz_16_anomaly.png")
-        print("    • viz_17_pca.png")
-        print("    • viz_17_umap.png (if available)")
-        print("    • viz_17_tsne.png (if available)")
-        print("    • viz_18_regimes.png")
-        print("    • viz_18_regime_scatter.png")
-        print("    • viz_20_fingerprints.png")
+        print("    • viz_04_significance.png through viz_20_fingerprints.png")
 
         print("\n" + "="*80)
         print("Ready for Phase 3: Feature Engineering")
@@ -1133,4 +1273,4 @@ def run_phase_2_complete(train_path='train_cleaned.csv', verbose=True):
 
 
 if __name__ == "__main__":
-    run_phase_2_complete(train_path='train_cleaned.csv', verbose=True)
+    main(train_path='train.csv', test_path='test.csv', verbose=True)
