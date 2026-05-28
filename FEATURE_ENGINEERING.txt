@@ -1,0 +1,527 @@
+================================================================================
+FEATURE ENGINEERING - DETAILED DOCUMENTATION
+ALPHA DEFECT DETECTION PROJECT
+================================================================================
+
+OVERVIEW
+========
+
+Total Features: 64
+  • Original features: 49 (X1-X49)
+  • Engineered features: 15 (from EDA/SHAP insights)
+
+Engineering Approach: Data-Driven & Interpretable
+  ✓ All features traceable to EDA visualizations
+  ✓ Guided by SHAP feature importance
+  ✓ Validated through instability metrics
+  ✓ Focused on interaction effects (not anomaly detection)
+
+Rationale for Feature Engineering:
+  • Original features alone: ROC-AUC 0.8639 (baseline)
+  • PCA analysis shows defects don't separate → need interactions
+  • SHAP analysis identifies dominant drivers (X36, X35, X41)
+  • EDA instability metrics reveal sensitive feature ranges
+  • Strategic features reduce from 44 (V1) to 15 (V2) with better performance
+
+================================================================================
+DETAILED FEATURE SPECIFICATIONS
+================================================================================
+
+PRIORITY 1: X36-CENTRIC FEATURES (3 features)
+============================================
+
+Feature 1: X36/X35 (Cooling Imbalance Ratio)
+
+  Formula: X36 / (X35 + 1e-6)
+
+  Justification:
+    • X36 has highest SHAP values in baseline model (dominant driver)
+    • X35 has 259% relative instability (viz_06_instability.png)
+    • Their ratio captures cooling imbalance patterns
+    • High ratio indicates X36 >> X35 (potential defect condition)
+
+  Data Cleaning:
+    • Handle division by zero: Add 1e-6 to denominator
+    • Replace non-finite values with 0
+    • Preserves valid ratios, prevents NaN propagation
+
+  Defect Indicator:
+    • Extreme ratios (very high or very low) correlate with defects
+    • Captures cooling instability at system level
+
+  Expected Range:
+    • Normal: 0.9-1.1 (relatively balanced cooling)
+    • Defect: 0.5-2.0+ (severe imbalance)
+
+
+Feature 2: X36/X34 (Alternative Cooling Ratio)
+
+  Formula: X36 / (X34 + 1e-6)
+
+  Justification:
+    • X34 also in cooling block (25-36), 240% instability
+    • Different denominator captures different aspect of imbalance
+    • Provides redundant check on X36 dominance
+    • Increases robustness of cooling pattern detection
+
+  Relationship to Feature 1:
+    • Correlated but different patterns
+    • Both high → severe cooling issues
+    • Divergence → localized cooling problems
+
+  Value Add:
+    • Independent perspective on X36 behavior
+    • Catches edge cases missed by X36/X35 alone
+
+
+Feature 3: X36×X41 (Cooling×Control Interaction)
+
+  Formula: X36 * X41
+
+  Justification:
+    • From EDA interaction analysis (eda_interactions_analysis.csv)
+    • Risk score: 39.31% (highest danger interaction)
+    • When both X36 and X41 high → 39% of coils are defective
+    • Captures non-linear relationship
+
+  Domain Meaning:
+    • X36: Cooling parameter
+    • X41: Control parameter
+    • Their product: Combined cooling-control stress
+    • High product → extreme operating conditions
+
+  Defect Indicator:
+    • X36×X41 > threshold indicates high defect probability
+    • Captures synergistic effect (multiplication not addition)
+
+  Example:
+    • X36=100, X41=0.01 → product = 1
+    • X36=200, X41=0.02 → product = 4 (product sensitive)
+
+
+================================================================================
+
+PRIORITY 2: COOLING CLUSTER FEATURES (3 features)
+==================================================
+
+Feature 4: X35/X34 (Within-Cooling Imbalance)
+
+  Formula: X35 / (X34 + 1e-6)
+
+  Justification:
+    • From viz_06_instability.png: X35 (259%) and X34 (240%) highest
+    • Both in cooling block (features 25-36)
+    • Their ratio indicates cooling subsystem imbalance
+    • Relative instability suggests defect sensitivity
+
+  Why Different from X36/X35?
+    • Excludes X36, focuses on X35-X34 relationship
+    • Isolates different cooling zone dynamics
+    • Provides independent cooling pattern
+
+  Data Pattern:
+    • Normal: Ratio ~1.0 (balanced cooling stages)
+    • Defect: Diverges significantly (one stage overheats/undercools)
+
+
+Feature 5: X35×X41 (Cooling×Control Secondary Interaction)
+
+  Formula: X35 * X41
+
+  Justification:
+    • From EDA interaction analysis
+    • Risk score: 39.31% (tied with X36×X41)
+    • Alternative cooling parameter (X35) paired with control (X41)
+    • Captures similar pattern from different cooling angle
+
+  Redundancy & Value:
+    • Similar risk score to X36×X41
+    • Not fully redundant: different cooling parameter
+    • Ensemble effect: both high → very high defect risk
+
+  Example Scenario:
+    • High X35 (high cooling at zone 35) + high X41 (tight control)
+    • Combined pressure on system
+    • Defect probability increases significantly
+
+
+Feature 6: X34-X36 (Cooling Parameter Difference)
+
+  Formula: X34 - X36
+
+  Justification:
+    • Captures divergence between cooling zones
+    • Subtraction (not division) measures absolute difference
+    • Identifies zones moving in opposite directions
+    • Indicates loss of cooling coordination
+
+  Insight from Conditional Behavior:
+    • In normal coils: X34 and X36 move together (correlation)
+    • In defects: They diverge (loss of coordination)
+    • This feature detects breakage of coordination pattern
+
+  Interpretation:
+    • X34 > X36: Zone 34 hotter than zone 36
+    • X34 < X36: Zone 36 hotter than zone 34
+    • |X34-X36| large → process instability
+
+
+================================================================================
+
+PRIORITY 3: TOP DANGEROUS INTERACTIONS (5 features)
+====================================================
+
+These 5 features based on risk scores from eda_interactions_analysis.csv
+
+Feature 7: X29×X41 (Rolling×Control Interaction)
+
+  Formula: X29 * X41
+  Risk Score: 36.59%
+
+  Justification:
+    • X29 in rolling block (13-24)
+    • X41 control parameter
+    • 36.59% of coils defective when both high
+    • Top interaction from EDA analysis
+
+
+Feature 8: X30×X41 (Rolling×Control Interaction)
+
+  Formula: X30 * X41
+  Risk Score: 35.92%
+
+  Justification:
+    • Adjacent rolling parameter (X30 vs X29)
+    • Same control parameter (X41)
+    • Slightly lower but still top 5 risk
+    • Captures rolling-control stress from different angle
+
+
+Feature 9: X31×X41 (Rolling×Control Interaction)
+
+  Formula: X31 * X41
+  Risk Score: 35.58%
+
+  Justification:
+    • Further downstream in rolling block
+    • Consistent pattern across X29, X30, X31 with X41
+    • Rolling stages × control create systematic interactions
+    • Multiple interactions improve robustness
+
+
+Feature 10: X32×X41 (Rolling×Control Interaction)
+
+  Formula: X32 * X41
+  Risk Score: 34.69%
+
+  Justification:
+    • Last rolling stage (32 vs 13-31)
+    • Maintains pattern but slightly lower risk
+    • Confirms rolling-control is systematic threat
+
+
+Feature 11: X13×X41 (Rolling Start×Control Interaction)
+
+  Formula: X13 * X41
+  Risk Score: 32.76%
+
+  Justification:
+    • X13 is first rolling parameter
+    • Completes rolling block coverage with control
+    • Lower than X29-X32 but still top 5
+    • Early stage rolling + control → defect pressure
+
+
+Summary of Interaction Features:
+  • 5 interactions all with X41 (control parameter is common thread)
+  • Rolling block heavily involved (X13, X29, X30, X31, X32)
+  • Pattern: Rolling stage × Control parameter → defect
+  • Implication: Control system struggles with rolling variations
+
+
+================================================================================
+
+PRIORITY 4: ROW-LEVEL STATISTICS (3 features)
+==============================================
+
+Feature 12: row_mean (Coil Signature Average)
+
+  Formula: mean(X1, X2, ..., X49)
+
+  Justification:
+    • Summary statistic across all features
+    • Represents overall coil operating level
+    • High row_mean → hot coil (more stress)
+    • Low row_mean → cool coil (less stress)
+
+  Defect Indicator:
+    • Extreme coil temperatures correlate with defects
+    • Not a feature, but a system health indicator
+
+  Interpretation:
+    • Normal: row_mean 500-1000 (typical operating range)
+    • Defect: Often row_mean extremes (very hot/cold)
+
+
+Feature 13: row_std (Coil Parameter Variability)
+
+  Formula: std(X1, X2, ..., X49)
+
+  Justification:
+    • Measures inconsistency within coil parameters
+    • High row_std → parameters scattered (unstable coil)
+    • Low row_std → parameters synchronized (stable coil)
+
+  Domain Meaning:
+    • Different zones should work together
+    • High variance across zones → loss of coordination
+    • Coordination loss → defect risk increases
+
+  Example:
+    • Stable coil: All parameters in 500-600 range (std = small)
+    • Unstable coil: Parameters range 100-1000 (std = large)
+    • Unstable coil more likely to have defects
+
+
+Feature 14: instability (Coefficient of Variation)
+
+  Formula: row_std / (abs(row_mean) + 1e-6)
+
+  Justification:
+    • Normalizes variability by mean (accounts for scale)
+    • High CV → high variability relative to mean
+    • Dimension-independent metric
+    • Directly inspired by viz_06_instability.png insights
+
+  From EDA:
+    • X35: 259% CV (most unstable)
+    • X34: 240% CV (very unstable)
+    • X36: 230% CV (very unstable)
+    • These features highly unstable in defect samples
+
+  Row-Level Application:
+    • If many features are unstable → row CV high
+    • High row CV → coil system instability
+    • System instability → defect risk
+
+  Data Cleaning:
+    • Handle division by zero: Add 1e-6 to denominator
+    • Replace non-finite with 0
+
+
+================================================================================
+
+PRIORITY 5: ROLLING CLUSTER FEATURE (1 feature)
+================================================
+
+Feature 15: rolling_mean (Secondary SHAP Drivers)
+
+  Formula: mean(X10, X13, X14, X16)
+
+  Justification:
+    • X10: From missing value analysis (imputed, relevant)
+    • X13: First rolling parameter, risk scores with X41
+    • X14: Rolling block stage
+    • X16: Rolling block stage with missing values
+
+  Why These Specific Features?
+    • Not all rolling features, only high-impact ones
+    • X10 selected for robustness (missing data resilience)
+    • X13, X14, X16 from feature importance rankings
+
+  Defect Indicator:
+    • Rolling zone health indicator
+    • Complements cooling-focused features
+    • Captures rolling-stage stress without interactions
+
+  Secondary Role:
+    • Primary features (X36, X35, X41) are dominant
+    • rolling_mean provides secondary signal
+    • Ensemble value: multiple moderate signals > one strong signal
+
+
+================================================================================
+FEATURE ENGINEERING VALIDATION
+================================================================================
+
+Performance Impact:
+
+  Original Model (49 features):
+    • ROC-AUC: 0.8639
+    • F1: 0.3426
+    • Interpretability: Limited (49 features)
+
+  V1 Feature Engineering (44 engineered features, 93 total):
+    • ROC-AUC: 0.9988
+    • F1: 0.9667
+    • Interpretability: Low (44 features hard to explain)
+    • Feature bloat: Unnecessary redundancy
+
+  V2 Feature Engineering (15 engineered features, 64 total):
+    • ROC-AUC: 0.9990 ✓ (better than V1)
+    • F1: 0.9681 ✓ (better than V1)
+    • Interpretability: High (each feature justifiable)
+    • Feature efficiency: 66% reduction, better performance
+
+Conclusion:
+  ✓ V2 demonstrates that quality > quantity
+  ✓ EDA-guided features outperform generic features
+  ✓ 15 focused features > 44 generic features
+  ✓ All features traceable to domain insights
+
+
+================================================================================
+IMPLEMENTATION DETAILS
+================================================================================
+
+Data Cleaning Protocols:
+
+  Division by Zero:
+    • Always add small constant: divisor + 1e-6
+    • Prevents numerical instability
+    • Preserves signal for valid ranges
+
+  Non-Finite Values:
+    • Check with np.isfinite()
+    • Replace NaN/Inf with 0
+    • Prevents downstream NaN propagation
+
+  Feature Scaling:
+    • Not applied during engineering (handled separately)
+    • Features normalized before model training
+
+Code Implementation:
+
+  ```python
+  # X36/X35 ratio
+  with np.errstate(divide='ignore', invalid='ignore'):
+      ratio = np.divide(X[:, x36_idx], X[:, x35_idx] + 1e-6)
+      ratio[~np.isfinite(ratio)] = 0
+
+  # X36 × X41 interaction
+  interaction = X[:, x36_idx] * X[:, x41_idx]
+
+  # row_mean
+  row_mean = X.mean(axis=1, keepdims=True)
+
+  # instability (CV)
+  with np.errstate(divide='ignore', invalid='ignore'):
+      instability = np.divide(row_std, np.abs(row_mean) + 1e-6)
+      instability[~np.isfinite(instability)] = 0
+  ```
+
+Consistency Across Train/Test:
+
+  ✓ Same engineering applied to both sets
+  ✓ No data leakage (statistics from training only)
+  ✓ Features generated after imputation
+  ✓ No target variable involved in engineering
+
+
+================================================================================
+FEATURE INTERACTIONS & COMBINATIONS
+================================================================================
+
+Primary Interaction Chains:
+
+  Chain 1: Cooling-Focused
+    X36 (dominant) → X36/X35, X36/X34, X36×X41
+    X35 (secondary) → X35/X34, X35×X41
+    Combined effect: Multiple cooling perspectives
+
+  Chain 2: Rolling-Focused
+    X29, X30, X31, X32, X13 (rolling block)
+    × X41 (control parameter)
+    Combined effect: Rolling-control stress patterns
+
+  Chain 3: System Health
+    row_mean, row_std, instability
+    Combined effect: Overall coil stability signature
+
+Why Not More Interactions?
+  • Limited by feature engineering principle: traceability
+  • Only use interactions supported by EDA findings
+  • Avoid "kitchen sink" approach
+  • Quality > quantity prevents overfitting
+
+Interaction Hierarchy:
+
+  Tier 1 (Strongest):
+    • X36×X41, X35×X41 (risk 39%, 39%)
+    • X29×X41, X30×X41, X31×X41 (risk 36-37%)
+
+  Tier 2 (Strong):
+    • X36/X35, X35/X34 (instability-based)
+    • X13×X41 (risk 33%)
+
+  Tier 3 (Supporting):
+    • X36/X34, X34-X36 (alternative angles)
+    • rolling_mean (secondary driver)
+
+  Tier 4 (Foundational):
+    • row_mean, row_std, instability (system metrics)
+
+
+================================================================================
+FEATURE IMPORTANCE IN FINAL MODEL
+================================================================================
+
+SHAP-based Feature Importance Ranking:
+
+  From Baseline Model (Phase 3):
+    1. X36 (Dominant)
+    2. X35 (Secondary)
+    3. X37 (Tertiary)
+    4. X41, X29, X30, X31, X32 (Interactions)
+
+  Expected Importance After Engineering:
+
+    Very High:
+      • X36/X35 (captures dominant feature with instability)
+      • X36/X34 (X36 dominance alternative)
+      • X36×X41 (highest risk interaction)
+
+    High:
+      • X35/X34 (secondary cooling zone)
+      • X35×X41 (secondary interaction)
+      • X29×X41, X30×X41, X31×X41, X32×X41 (rolling interactions)
+
+    Medium:
+      • row_std, instability (system stability)
+      • X34-X36 (coordination pattern)
+
+    Lower:
+      • rolling_mean (secondary signal)
+      • row_mean (less discriminative)
+
+
+================================================================================
+CONCLUSION
+================================================================================
+
+Feature Engineering Success:
+
+  ✓ Strategic: Only 15 features vs 44 (66% reduction)
+  ✓ Interpretable: Every feature justified by EDA/SHAP
+  ✓ Effective: ROC-AUC improves from 0.8639 to 0.9990
+  ✓ Efficient: Better performance with fewer features
+  ✓ Traceable: Complete audit trail from data insights to model
+
+Key Principles Applied:
+
+  1. Data-Driven: Guided by EDA visualizations and SHAP
+  2. Domain-Aligned: Features make industrial sense
+  3. Interaction-Focused: Addresses PCA limitation (defects don't separate)
+  4. Minimal: Quality > Quantity principle
+  5. Robust: Handles edge cases (division by zero, NaN)
+
+The 15 engineered features form a coherent system:
+  • Cooling subsystem (6 features)
+  • Rolling-control interactions (5 features)
+  • System health metrics (3 features)
+  • Secondary rolling signal (1 feature)
+
+Together they capture the full complexity of defect patterns
+while maintaining interpretability and avoiding overfitting.
+
+================================================================================
