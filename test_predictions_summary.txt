@@ -1,0 +1,36 @@
+================================================================================
+TEST DATA PREDICTION SUMMARY
+================================================================================
+
+               Metric                   Value
+        Total Samples                     339
+   Defect Predictions                       8
+   Normal Predictions                     331
+      Defect Rate (%)                   2.36%
+     Mean Probability                  0.0466
+      Std Probability                  0.0763
+      Min Probability                  0.0289
+      Max Probability                  0.7541
+       Threshold Used                    0.25
+                Model          XGBoost Hybrid
+  Features (Original)                      49
+Features (Engineered)                      15
+     Features (Total)                      64
+   Calibration Method Sigmoid (Platt scaling)
+
+================================================================================
+PREDICTION DISTRIBUTION
+================================================================================
+Defect (1): 8 samples (2.36%)
+Normal (0): 331 samples (97.64%)
+
+================================================================================
+PROBABILITY STATISTICS
+================================================================================
+Mean: 0.0466
+Std Dev: 0.0763
+Min: 0.0289
+Max: 0.7541
+Median: 0.0291
+Percentile 25: 0.0290
+Percentile 75: 0.0312
