@@ -171,8 +171,8 @@ def load_and_clean_data(train_path='train.csv', test_path='test.csv', verbose=Tr
         if missing_count > 0:
             # Fill with median (robust to outliers)
             median_val = train_df[col].median()
-            train_df[col].fillna(median_val, inplace=True)
-            test_df[col].fillna(median_val, inplace=True)
+            train_df[col] = train_df[col].fillna(median_val)
+            test_df[col] = test_df[col].fillna(median_val)
             filled_count += missing_count
             if verbose:
                 print(f"  {col}: Filled {missing_count} values with median ({median_val:.4f})")
